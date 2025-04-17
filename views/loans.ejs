@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Loan & Debt - Expense Tracker</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <div class="logo">
+        <a href="/">ExpenseTracker</a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/loans">Loans & Debts</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h2>Loan & Debt Management</h2>
+
+    <% if (loans && loans.length > 0) { %>
+      <ul class="loan-list">
+        <% loans.forEach(loan => {
+          const paid = loan.paidAmount || 0;
+          const remaining = loan.amount - paid;
+        %>
+          <li>
+            <strong><%= loan.name %></strong><br />
+            Total: $<%= loan.amount %> |
+            Paid: $<%= paid %> |
+            Remaining: $<%= remaining %>
+
+            <!-- Payment form -->
+            <form action="/loans/pay/<%= loan.id %>" method="POST" style="display:inline;">
+              <input type="number" name="payment" step="0.01" placeholder="Pay amount" required />
+              <button type="submit" class="btn-small">Pay</button>
+            </form>
+            
+            <!-- Delete loan -->
+            <form action="/loans/delete/<%= loan.id %>" method="POST" style="display:inline;">
+              <button class="delete-btn">x</button>
+            </form>
+          </li>
+        <% }); %>
+      </ul>
+    <% } else { %>
+      <p>No loans or debts recorded yet.</p>
+    <% } %>
+
+    <h3>Add New Loan or Debt</h3>
+    <form action="/loans/add" method="POST">
+      <div class="form-control">
+        <label for="name">Person/Institution</label>
+        <input type="text" name="name" placeholder="e.g. Bank, Friend" required />
+      </div>
+      <div class="form-control">
+        <label for="amount">Amount</label>
+        <input type="number" name="amount" placeholder="Loan/Debt amount" required />
+      </div>
+      <button class="btn" type="submit">Add Loan/Debt</button>
+    </form>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>&copy; <%= new Date().getFullYear() %> Expense Tracker. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>

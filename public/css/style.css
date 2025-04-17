@@ -1,0 +1,271 @@
+:root {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: antiquewhite;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+/* Navbar Styles */
+.navbar {
+    background-color: #1e1e2f;
+    padding: 15px 30px;
+    color: #fff;
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  
+  .navbar-container {
+    max-width: 1200px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  
+  .logo a {
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+    text-decoration: none;
+  }
+  
+  .nav-links {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .nav-links li a {
+    color: #ccc;
+    text-decoration: none;
+    font-size: 15px;
+    transition: color 0.3s;
+  }
+  
+  .nav-links li a:hover {
+    color: #fff;
+  }
+  
+
+.container {
+    margin: 30px auto;
+    width: 350px;
+}
+
+h1 {
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+h3 {
+    border-bottom: 1px solid #bbb;
+    padding-bottom: 10px;
+    margin: 40px 0px 10px;
+}
+
+h4 {
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.income-expense-container {
+    background-color: aliceblue;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    margin: 10px 0;
+}
+
+.income-expense-container > div {
+    flex: 1;
+    text-align: center;
+}
+
+.income-expense-container > div:first-of-type {
+    border-right: 1px solid #dedede;
+}
+
+.money {
+    font-size: 2;
+    letter-spacing: 1px;
+    margin: 5px 0;
+}
+
+.moneyplus {
+    color: #2ecc71;
+}
+
+.moneyminus {
+    color: #c0392b;
+}
+
+label {
+    display: inline-block;
+    margin: 10px 0;
+}
+
+input[type="text"], input[type="number"] {
+    border: 1px solid #dedede;
+    border-radius: 2px;
+    display: block;
+    font-size: 16px;
+    padding: 10px;
+    width: 100%;
+}
+
+.btn {
+    cursor: pointer;
+    background-color: #9c88ff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    color: #fff;
+    border: 0;
+    display: block;
+    font-size: 16px;
+    margin: 10px 0px 30px;
+    padding: 10px;
+    width: 100%;
+}
+
+.list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 40px;
+}
+
+.list li {
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+.list li.plus {
+    border: 5px solid #2ecc71;
+}
+
+.list li.minus {
+    border-right: 5px solid #c0392b;
+}
+
+.delete-btn {
+    cursor: pointer;
+    background-color: #e74c3c;
+    border: 0;
+    color: #fff;
+    font-size: 20px;
+    line-height: 20px;
+    padding: 2px 5px;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translate(-100%, -50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.list li:hover .delete-btn {
+    opacity: 1;
+}
+.footer {
+    background-color: #222;
+    color: #eee;
+    padding: 50px 20px 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.footer-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: auto;
+    gap: 40px;
+}
+
+.footer-container > div {
+    flex: 1 1 200px;
+}
+
+.footer h3, .footer h4 {
+    margin-bottom: 15px;
+    color: #fff;
+}
+
+.footer p, .footer a {
+    color: #ccc;
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.footer a:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.footer ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer ul li {
+    margin-bottom: 10px;
+}
+
+.footer-social .social-icons a {
+    margin-right: 10px;
+    display: inline-block;
+}
+
+.footer-social img {
+    width: 24px;
+    height: 24px;
+    filter: brightness(0) invert(1);
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 30px;
+    border-top: 1px solid #444;
+    font-size: 13px;
+    color: #aaa;
+}
+.loan-debt-container {
+    margin-top: 2rem;
+    padding: 1rem;
+    border-top: 2px solid #ccc;
+}
+
+.loan-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.loan-list li {
+    padding: 0.5rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+}
