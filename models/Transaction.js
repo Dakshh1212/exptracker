@@ -8,14 +8,26 @@ const transactionSchema = new mongoose.Schema({
   },
   amount: {
     type: Number,
-    required: true
+    required: true,
+    validate: {
+      validator: v => v !== 0,
+      message: 'Amount cannot be zero.'
+    }
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true
+  },
+  userEmail: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true,
+    match: [/.+@.+\..+/, "Invalid email"]
   }
 }, { timestamps: true });
 
-// Export the model. If it exists already, reuse it.
+transactionSchema.index({ user: 1 });
+
 module.exports = mongoose.models.Transaction || mongoose.model("Transaction", transactionSchema);

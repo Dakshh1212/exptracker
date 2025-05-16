@@ -3,45 +3,38 @@ const money_plus = document.getElementById("moneyplus");
 const money_minus = document.getElementById("moneyminus");
 const list = document.getElementById("list");
 const form = document.getElementById("form");
-const text = document.getElementById("text");
-const amount = document.getElementById("Amount");
+const text = form.querySelector('input[name="text"]');
+const amount = form.querySelector('input[name="amount"]'); // changed to lowercase to match your input name
 
 // Fetch transactions from the server
 async function fetchTransactions() {
   const response = await fetch("/transactions");
-  const transactions = await response.json();
-  return transactions;
+  if (!response.ok) throw new Error("Failed to fetch transactions");
+  return await response.json();
 }
 
-// Theme toggle button
+// Theme toggle button handling
 document.addEventListener("DOMContentLoaded", () => {
   const toggle = document.getElementById("theme-toggle");
+  if (!toggle) return;
+
+  // Load theme from localStorage and set button icon
+  const currentTheme = localStorage.getItem('theme');
+  if (currentTheme) {
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    toggle.textContent = currentTheme === 'dark' ? '🌙' : '🌞';
+  }
+
   toggle.addEventListener("click", () => {
-    document.documentElement.toggleAttribute("data-theme", "dark");
+    const currentTheme = document.documentElement.getAttribute("data-theme");
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+    toggle.textContent = newTheme === "dark" ? "🌙" : "🌞";
   });
 });
 
-const themeToggleBtn = document.getElementById('theme-toggle');
-const currentTheme = localStorage.getItem('theme');
-
-// Check if a theme is already set in localStorage and apply it
-if (currentTheme) {
-  document.documentElement.setAttribute('data-theme', currentTheme);
-  themeToggleBtn.textContent = currentTheme === 'dark' ? '🌙' : '🌞';
-} else {
-  console.log('No theme set in localStorage.');
-}
-
-// Event listener to handle the theme toggle
-themeToggleBtn.addEventListener('click', () => {
-  let currentDataTheme = document.documentElement.getAttribute('data-theme');
-  let newTheme = currentDataTheme === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-  themeToggleBtn.textContent = newTheme === 'dark' ? '🌙' : '🌞';
-});
-
-// Add transaction to server and DOM
+// Add transaction to server and refresh UI
 async function addTransaction(e) {
   e.preventDefault();
 
@@ -51,79 +44,80 @@ async function addTransaction(e) {
   }
 
   const transaction = {
-    text: text.value,
-    amount: +amount.value
+    text: text.value.trim(),
+    amount: parseFloat(amount.value)
   };
 
-  // Send transaction data to the server
-  const response = await fetch("/add", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(transaction)
-  });
+  try {
+    const response = await fetch("/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(transaction),
+    });
 
-  if (response.ok) {
-    // Once the transaction is added, fetch updated transactions
-    init();
-  } else {
-    alert("Failed to add transaction.");
+    if (!response.ok) throw new Error("Failed to add transaction.");
+
+    // Clear input fields
+    text.value = "";
+    amount.value = "";
+
+    // Refresh transaction list and balance
+    await init();
+  } catch (error) {
+    alert(error.message);
   }
-
-  // Clear input fields
-  text.value = "";
-  amount.value = "";
 }
 
-// Initialize page with transactions from server
-async function init() {
-  const transactions = await fetchTransactions();
-  list.innerHTML = ""; // Clear existing list
-  transactions.forEach(addTransactionDOM);
-  updateValues(transactions);
-}
-
-// Function to add transaction to DOM
+// Render transactions on the page
 function addTransactionDOM(transaction) {
   const sign = transaction.amount < 0 ? "-" : "+";
   const item = document.createElement("li");
-
   item.classList.add(transaction.amount < 0 ? "minus" : "plus");
-
   item.innerHTML = `
     ${transaction.text} <span>${sign}$${Math.abs(transaction.amount)}</span>
     <button class="delete-btn" onclick="removeTransaction('${transaction._id}')">x</button>
   `;
-
   list.appendChild(item);
 }
 
-// Update balance, income, and expense values
+// Update the balance, income, and expense UI
 function updateValues(transactions) {
-  const amounts = transactions.map(transaction => transaction.amount);
+  const amounts = transactions.map(t => t.amount);
 
   const total = amounts.reduce((acc, item) => acc + item, 0).toFixed(2);
   const income = amounts.filter(item => item > 0).reduce((acc, item) => acc + item, 0).toFixed(2);
   const expense = (amounts.filter(item => item < 0).reduce((acc, item) => acc + item, 0) * -1).toFixed(2);
 
-  balance.innerText = `$${total}`;
-  money_plus.innerText = `+$${income}`;
-  money_minus.innerText = `-$${expense}`;
+  balance.textContent = `$${total}`;
+  money_plus.textContent = `+$${income}`;
+  money_minus.textContent = `-$${expense}`;
 }
 
-// Function to remove transaction
+// Remove transaction from server and refresh UI
 async function removeTransaction(id) {
-  const response = await fetch(`/delete/${id}`, { method: "POST" });
-  if (response.ok) {
-    init(); // Re-fetch transactions after deletion
-  } else {
-    alert("Failed to remove transaction.");
+  try {
+    const response = await fetch(`/delete/${id}`, { method: "POST" });
+    if (!response.ok) throw new Error("Failed to remove transaction.");
+    await init();
+  } catch (error) {
+    alert(error.message);
   }
 }
 
-// Add event listener to form
+// Initialize app by fetching and rendering transactions
+async function init() {
+  try {
+    const transactions = await fetchTransactions();
+    list.innerHTML = "";
+    transactions.forEach(addTransactionDOM);
+    updateValues(transactions);
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+// Form submit listener
 form.addEventListener("submit", addTransaction);
 
-// Initialize app
+// Start the app
 init();

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Expense Tracker</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
 
@@ -36,6 +36,10 @@
   <!-- Main Content -->
   <div class="container">
     <h2>Expense Tracker</h2>
+    <% if (error) { %>
+      <div class="error-message"><%= error %></div>
+    <% } %>
+
     <h4>Your Balance</h4>
     <h1 id="balance">$<%= transactions.reduce((acc, t) => acc + t.amount, 0).toFixed(2) %></h1>
 
@@ -60,11 +64,8 @@
         <li class="<%= transaction.amount < 0 ? 'minus' : 'plus' %>">
           <strong><%= transaction.text %></strong>
           <span><%= transaction.amount < 0 ? '-' : '+' %>$<%= Math.abs(transaction.amount) %></span>
-          <% if (transaction.user && transaction.user.email) { %>
-            <div class="transaction-user">By: <%= transaction.user.email %></div>
-          <% } %>
           <form action="/delete/<%= transaction._id %>" method="POST" style="display:inline;">
-            <button class="delete-btn">x</button>
+            <button class="delete-btn" aria-label="Delete transaction">x</button>
           </form>
         </li>
       <% }); %>
@@ -78,7 +79,14 @@
       </div>
       <div class="form-control">
         <label for="amount">Amount</label>
-        <input type="number" name="amount" id="Amount" placeholder="Enter amount..." required />
+        <input
+          type="number"
+          name="amount"
+          id="Amount"
+          placeholder="Enter amount..."
+          step="0.01"
+          required
+        />
       </div>
       <button class="btn" type="submit">Add Transaction</button>
     </form>

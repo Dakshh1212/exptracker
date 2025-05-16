@@ -7,7 +7,6 @@ const path = require("path");
 const app = express();
 const PORT = 3001;
 
-// Import Mongoose models
 const Transaction = require("./models/Transaction");
 const Loan = require("./models/Loan");
 const User = require("./models/User");
@@ -24,25 +23,33 @@ app.use(session({
   saveUninitialized: true,
 }));
 
-// Set EJS as view engine
 app.set("view engine", "ejs");
 
-// MongoDB Connection
+// MongoDB
 mongoose.connect("mongodb://127.0.0.1:27017/expenseTrackerDB")
-  .then(() => console.log("MongoDB connected successfully"))
+  .then(() => console.log("MongoDB connected"))
   .catch(err => console.log("MongoDB connection error:", err));
 
-// Middleware to protect routes
 function requireLogin(req, res, next) {
   if (!req.session.user) return res.redirect("/login");
   next();
 }
 
-// Home Page
+function getUserId(req) {
+  try {
+    return mongoose.Types.ObjectId(req.session.user._id);
+  } catch {
+    return null;
+  }
+}
+
 app.get("/", requireLogin, async (req, res) => {
   try {
-    const transactions = await Transaction.find().populate('user', 'email username');
-    const loans = await Loan.find().populate('user', 'email username');
+    const userId = getUserId(req);
+    if (!userId) return res.redirect("/login");
+
+    const transactions = await Transaction.find({ user: userId });
+    const loans = await Loan.find({ user: userId });
 
     const totalIncome = transactions.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
     const totalExpenses = transactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0);
@@ -62,36 +69,28 @@ app.get("/", requireLogin, async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.status(500).send("Error fetching data");
+    res.status(500).send("Error loading dashboard");
   }
 });
 
-// Show all loans with user info (Admin-style)
 app.get("/loans", requireLogin, async (req, res) => {
   try {
-    const loans = await Loan.find().populate('user', 'email username');
-    res.render("loans", { loans });
-  } catch (err) {
-    console.log(err);
-    res.status(500).send("Error fetching loans");
-  }
-});
-
-// Show only the logged-in user's loans
-app.get("/myloans", requireLogin, async (req, res) => {
-  try {
-    const userId = req.session.user._id;
+    const userId = getUserId(req);
     const loans = await Loan.find({ user: userId });
-    res.render("loans", { loans });
+    const error = req.query.error || null;
+    res.render("loans", { loans, user: req.session.user, error });
   } catch (err) {
     console.log(err);
-    res.status(500).send("Error fetching loans");
+    res.status(500).send("Error loading loans");
   }
 });
 
-// Login
+app.get("/myloans", requireLogin, (req, res) => {
+  res.redirect("/loans");
+});
+
 app.get("/login", (req, res) => {
-  res.render("login");
+  res.render("login", { error: null });
 });
 
 app.post("/login", async (req, res) => {
@@ -99,17 +98,16 @@ app.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (user && await bcrypt.compare(password, user.password)) {
-      req.session.user = { _id: user._id, username: user.username, email: user.email };
+      req.session.user = { _id: user._id.toString(), username: user.username, email: user.email };
       return res.redirect("/");
     }
-    res.send("Invalid email or password");
+    res.render("login", { error: "Invalid email or password" });
   } catch (err) {
     console.log(err);
-    res.status(500).send("Error logging in");
+    res.status(500).send("Login error");
   }
 });
 
-// Signup
 app.get("/signup", (req, res) => {
   res.render("signup");
 });
@@ -119,33 +117,31 @@ app.post("/signup", async (req, res) => {
   try {
     const userExists = await User.findOne({ email });
     if (userExists) return res.send("User already exists.");
-    
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
     res.redirect("/login");
   } catch (err) {
     console.log(err);
-    res.status(500).send("Error signing up");
+    res.status(500).send("Signup error");
   }
 });
 
-// Logout
 app.post("/logout", (req, res) => {
-  req.session.destroy(() => {
-    res.redirect("/login");
-  });
+  req.session.destroy(() => res.redirect("/login"));
 });
 
-// Add Transaction
 app.post("/add", requireLogin, async (req, res) => {
   const { text, amount } = req.body;
-  if (!text || !amount) return res.redirect("/");
+  if (!text || !amount) return res.redirect("/?error=Missing fields");
   try {
+    const userId = getUserId(req);
     const newTransaction = new Transaction({
       text,
       amount: parseFloat(amount),
-      user: req.session.user._id
+      user: userId,
+      userEmail: req.session.user.email,
     });
     await newTransaction.save();
     res.redirect("/");
@@ -155,10 +151,11 @@ app.post("/add", requireLogin, async (req, res) => {
   }
 });
 
-// Delete Transaction
 app.post("/delete/:id", requireLogin, async (req, res) => {
   try {
-    await Transaction.deleteOne({ _id: req.params.id, user: req.session.user._id });
+    const userId = getUserId(req);
+    const result = await Transaction.deleteOne({ _id: req.params.id, user: userId });
+    if (result.deletedCount === 0) return res.status(403).send("Unauthorized");
     res.redirect("/");
   } catch (err) {
     console.log(err);
@@ -166,59 +163,58 @@ app.post("/delete/:id", requireLogin, async (req, res) => {
   }
 });
 
-// Add Loan
 app.post("/loans/add", requireLogin, async (req, res) => {
   const { name, amount } = req.body;
-  if (!name || !amount) return res.redirect("/loans");
+  if (!name || !amount) return res.redirect("/loans?error=All fields required");
   try {
+    const userId = getUserId(req);
     const newLoan = new Loan({
       name,
       amount: parseFloat(amount),
       paidAmount: 0,
-      user: req.session.user._id
+      user: userId
     });
     await newLoan.save();
     res.redirect("/loans");
   } catch (err) {
     console.log(err);
-    res.status(500).send("Error adding loan");
+    res.redirect("/loans?error=Error adding loan");
   }
 });
 
-// Pay Loan
 app.post("/loans/pay/:id", requireLogin, async (req, res) => {
   const { payment } = req.body;
-  if (!payment) return res.redirect("/loans");
+  if (!payment) return res.redirect("/loans?error=Payment is required");
   try {
-    const loan = await Loan.findOne({ _id: req.params.id, user: req.session.user._id });
-    if (!loan) return res.status(404).send("Loan not found");
+    const userId = getUserId(req);
+    const loan = await Loan.findOne({ _id: req.params.id, user: userId });
+    if (!loan) return res.redirect("/loans?error=Loan not found");
 
     loan.paidAmount += parseFloat(payment);
     await loan.save();
     res.redirect("/loans");
   } catch (err) {
     console.log(err);
-    res.status(500).send("Error paying loan");
+    res.redirect("/loans?error=Payment error");
   }
 });
 
-// Delete Loan
 app.post("/loans/delete/:id", requireLogin, async (req, res) => {
   try {
-    await Loan.deleteOne({ _id: req.params.id, user: req.session.user._id });
+    const userId = getUserId(req);
+    const result = await Loan.deleteOne({ _id: req.params.id, user: userId });
+    if (result.deletedCount === 0) return res.redirect("/loans?error=Unauthorized");
     res.redirect("/loans");
   } catch (err) {
     console.log(err);
-    res.status(500).send("Error deleting loan");
+    res.redirect("/loans?error=Delete error");
   }
 });
 
-// Contact Page
 app.get("/contact", requireLogin, (req, res) => {
   res.render("contact", { error: null, success: null });
 });
 
-// Contact Form Submission
 app.post("/contact", requireLogin, async (req, res) => {
   const { name, email, message } = req.body;
   if (!name || !email || !message) {
@@ -226,15 +222,11 @@ app.post("/contact", requireLogin, async (req, res) => {
   }
 
   try {
-    const newContact = new Contact({
-      name,
-      email,
-      message,
-      user: req.session.user._id
-    });
+    const userId = getUserId(req);
+    const newContact = new Contact({ name, email, message, user: userId });
     await newContact.save();
     res.render("contact", {
-      success: "Thank you for reaching out! We'll get back to you soon.",
+      success: "Thank you for reaching out!",
       error: null,
     });
   } catch (err) {
@@ -246,7 +238,6 @@ app.post("/contact", requireLogin, async (req, res) => {
   }
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

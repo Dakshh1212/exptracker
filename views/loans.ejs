@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Loan & Debt - Expense Tracker</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
   <nav class="navbar">
@@ -14,12 +15,27 @@
       <ul class="nav-links">
         <li><a href="/">Home</a></li>
         <li><a href="/loans">Loans & Debts</a></li>
+        <% if (!user) { %>
+          <li><a href="/login">Login</a></li>
+          <li><a href="/signup">Signup</a></li>
+        <% } else { %>
+          <li><a href="/contact">Contact</a></li>
+          <li>
+            <form action="/logout" method="POST" style="display:inline;">
+              <button type="submit" class="logout-btn">Logout</button>
+            </form>
+          </li>
+        <% } %>
       </ul>
     </div>
   </nav>
 
   <div class="container">
     <h2>Loan & Debt Management</h2>
+
+    <% if (error) { %>
+      <div class="error-message"><%= error %></div>
+    <% } %>
 
     <% if (loans && loans.length > 0) { %>
       <ul class="loan-list">
@@ -29,22 +45,30 @@
         %>
           <li>
             <strong><%= loan.name %></strong><br />
-            Total: $<%= loan.amount %> |
-            Paid: $<%= paid %> |
-            Remaining: $<%= remaining %><br/>
+            Total: $<%= loan.amount.toFixed(2) %> |
+            Paid: $<%= paid.toFixed(2) %> |
+            Remaining: $<%= remaining.toFixed(2) %><br/>
             <% if (loan.user && loan.user.email) { %>
               <div class="loan-user">By: <%= loan.user.email %></div>
             <% } %>
 
             <!-- Payment form -->
             <form action="/loans/pay/<%= loan._id %>" method="POST" style="display:inline;">
-              <input type="number" name="payment" step="0.01" placeholder="Pay amount" required />
+              <input
+                type="number"
+                name="payment"
+                step="0.01"
+                min="0.01"
+                max="<%= remaining.toFixed(2) %>"
+                placeholder="Pay amount"
+                required
+              />
               <button type="submit" class="btn-small">Pay</button>
             </form>
 
             <!-- Delete loan -->
             <form action="/loans/delete/<%= loan._id %>" method="POST" style="display:inline;">
-              <button class="delete-btn">x</button>
+              <button class="delete-btn" aria-label="Delete loan">x</button>
             </form>
           </li>
         <% }); %>
@@ -61,7 +85,14 @@
       </div>
       <div class="form-control">
         <label for="amount">Amount</label>
-        <input type="number" name="amount" placeholder="Loan/Debt amount" required />
+        <input
+          type="number"
+          name="amount"
+          placeholder="Loan/Debt amount"
+          step="0.01"
+          min="0.01"
+          required
+        />
       </div>
       <button class="btn" type="submit">Add Loan/Debt</button>
     </form>

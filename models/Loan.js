@@ -8,12 +8,20 @@ const loanSchema = new mongoose.Schema({
   },
   amount: {
     type: Number,
-    required: true
+    required: true,
+    min: [0, "Loan amount cannot be negative"]
   },
   paidAmount: {
     type: Number,
     required: true,
-    default: 0
+    default: 0,
+    min: [0, "Paid amount cannot be negative"],
+    validate: {
+      validator: function(v) {
+        return v <= this.amount;
+      },
+      message: "Paid amount cannot exceed loan amount"
+    }
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -21,5 +29,7 @@ const loanSchema = new mongoose.Schema({
     required: true
   }
 }, { timestamps: true });
+
+loanSchema.index({ user: 1 });
 
 module.exports = mongoose.models.Loan || mongoose.model("Loan", loanSchema);
