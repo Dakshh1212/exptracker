@@ -11,7 +11,7 @@ const PORT = 3001;
 const Transaction = require("./models/Transaction");
 const Loan = require("./models/Loan");
 const User = require("./models/User");
-const Contact = require('./models/Contact');
+const Contact = require("./models/Contact");
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -24,16 +24,13 @@ app.use(session({
   saveUninitialized: true,
 }));
 
-// Set EJS view engine
+// Set EJS as view engine
 app.set("view engine", "ejs");
 
 // MongoDB Connection
-mongoose.connect("mongodb://127.0.0.1:27017/expenseTrackerDB", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("MongoDB connected successfully"))
-.catch(err => console.log("MongoDB connection error:", err));
+mongoose.connect("mongodb://127.0.0.1:27017/expenseTrackerDB")
+  .then(() => console.log("MongoDB connected successfully"))
+  .catch(err => console.log("MongoDB connection error:", err));
 
 // Middleware to protect routes
 function requireLogin(req, res, next) {
@@ -41,12 +38,11 @@ function requireLogin(req, res, next) {
   next();
 }
 
-// Home Page - only show transactions and loans for logged-in user
+// Home Page
 app.get("/", requireLogin, async (req, res) => {
   try {
-    const userId = req.session.user._id;
-    const transactions = await Transaction.find({ user: userId });
-    const loans = await Loan.find({ user: userId });
+    const transactions = await Transaction.find().populate('user', 'email username');
+    const loans = await Loan.find().populate('user', 'email username');
 
     const totalIncome = transactions.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
     const totalExpenses = transactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0);
@@ -70,8 +66,19 @@ app.get("/", requireLogin, async (req, res) => {
   }
 });
 
-// Loans Page - only loans of logged-in user
+// Show all loans with user info (Admin-style)
 app.get("/loans", requireLogin, async (req, res) => {
+  try {
+    const loans = await Loan.find().populate('user', 'email username');
+    res.render("loans", { loans });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Error fetching loans");
+  }
+});
+
+// Show only the logged-in user's loans
+app.get("/myloans", requireLogin, async (req, res) => {
   try {
     const userId = req.session.user._id;
     const loans = await Loan.find({ user: userId });
@@ -92,7 +99,6 @@ app.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (user && await bcrypt.compare(password, user.password)) {
-      // Store user ID and username/email in session
       req.session.user = { _id: user._id, username: user.username, email: user.email };
       return res.redirect("/");
     }
@@ -112,9 +118,8 @@ app.post("/signup", async (req, res) => {
   const { username, email, password } = req.body;
   try {
     const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.send("User already exists.");
-    }
+    if (userExists) return res.send("User already exists.");
+    
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
@@ -132,7 +137,7 @@ app.post("/logout", (req, res) => {
   });
 });
 
-// Add Transaction (assign to logged-in user)
+// Add Transaction
 app.post("/add", requireLogin, async (req, res) => {
   const { text, amount } = req.body;
   if (!text || !amount) return res.redirect("/");
@@ -150,7 +155,7 @@ app.post("/add", requireLogin, async (req, res) => {
   }
 });
 
-// Delete Transaction (only if belongs to logged-in user)
+// Delete Transaction
 app.post("/delete/:id", requireLogin, async (req, res) => {
   try {
     await Transaction.deleteOne({ _id: req.params.id, user: req.session.user._id });
@@ -161,7 +166,7 @@ app.post("/delete/:id", requireLogin, async (req, res) => {
   }
 });
 
-// Add Loan (assign to logged-in user)
+// Add Loan
 app.post("/loans/add", requireLogin, async (req, res) => {
   const { name, amount } = req.body;
   if (!name || !amount) return res.redirect("/loans");
@@ -180,7 +185,7 @@ app.post("/loans/add", requireLogin, async (req, res) => {
   }
 });
 
-// Pay Loan (only if loan belongs to logged-in user)
+// Pay Loan
 app.post("/loans/pay/:id", requireLogin, async (req, res) => {
   const { payment } = req.body;
   if (!payment) return res.redirect("/loans");
@@ -197,7 +202,7 @@ app.post("/loans/pay/:id", requireLogin, async (req, res) => {
   }
 });
 
-// Delete Loan (only if belongs to logged-in user)
+// Delete Loan
 app.post("/loans/delete/:id", requireLogin, async (req, res) => {
   try {
     await Loan.deleteOne({ _id: req.params.id, user: req.session.user._id });
@@ -208,15 +213,14 @@ app.post("/loans/delete/:id", requireLogin, async (req, res) => {
   }
 });
 
-// Contact Page - GET
+// Contact Page
 app.get("/contact", requireLogin, (req, res) => {
   res.render("contact", { error: null, success: null });
 });
 
-// Contact Form Submission - POST (optional: save contact with user)
+// Contact Form Submission
 app.post("/contact", requireLogin, async (req, res) => {
   const { name, email, message } = req.body;
-
   if (!name || !email || !message) {
     return res.render("contact", { error: "All fields are required!", success: null });
   }
@@ -226,7 +230,7 @@ app.post("/contact", requireLogin, async (req, res) => {
       name,
       email,
       message,
-      user: req.session.user._id  // optional: associate contact with user
+      user: req.session.user._id
     });
     await newContact.save();
     res.render("contact", {
