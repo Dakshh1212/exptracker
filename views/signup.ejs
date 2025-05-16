@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <!-- Signup Section -->
+    <div class="signup-container">
+        <div class="signup-content">
+            <h1>Create an Account</h1>
+            <p>Join us today to get started with all the features we offer. It's quick and easy!</p>
+
+            <!-- Signup Form -->
+            <form action="/signup" method="POST" class="signup-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" name="username" id="username" placeholder="Enter your username" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" name="email" id="email" placeholder="Enter your email" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" name="password" id="password" placeholder="Enter your password" required />
+                </div>
+
+                <button type="submit" class="submit-btn">Signup</button>
+            </form>
+
+            <% if (typeof error !== 'undefined') { %>
+                <div class="error-message">
+                    <p><%= error %></p>
+                </div>
+            <% } %>
+
+            <p>Already have an account? <a href="/login" class="login-link">Login</a></p>
+        </div>
+    </div>
+
+    <script src="/js/script.js"></script>
+</body>
+
+</html>

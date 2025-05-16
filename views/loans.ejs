@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Loan & Debt - Expense Tracker</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <nav class="navbar">
@@ -34,13 +34,13 @@
             Remaining: $<%= remaining %>
 
             <!-- Payment form -->
-            <form action="/loans/pay/<%= loan.id %>" method="POST" style="display:inline;">
+            <form action="/loans/pay/<%= loan._id %>" method="POST" style="display:inline;">
               <input type="number" name="payment" step="0.01" placeholder="Pay amount" required />
               <button type="submit" class="btn-small">Pay</button>
             </form>
             
             <!-- Delete loan -->
-            <form action="/loans/delete/<%= loan.id %>" method="POST" style="display:inline;">
+            <form action="/loans/delete/<%= loan._id %>" method="POST" style="display:inline;">
               <button class="delete-btn">x</button>
             </form>
           </li>
