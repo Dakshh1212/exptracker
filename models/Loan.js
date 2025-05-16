@@ -17,9 +17,9 @@ const loanSchema = new mongoose.Schema({
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     required: true
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Loan', loanSchema);
+module.exports = mongoose.models.Loan || mongoose.model("Loan", loanSchema);

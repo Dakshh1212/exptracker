@@ -1,12 +1,18 @@
 const mongoose = require('mongoose');
 
-const transactionSchema = new mongoose.Schema({
-  text: String,
-  amount: Number,
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
+const userSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
+    match: [/\S+@\S+\.\S+/, "Please use a valid email address."]
+  },
+  password: {
+    type: String,
+    required: true
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model("Transaction", transactionSchema);
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);

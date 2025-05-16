@@ -12,9 +12,10 @@ const transactionSchema = new mongoose.Schema({
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     required: true
   }
-}, { timestamps: true }); // optional: adds createdAt and updatedAt timestamps
+}, { timestamps: true });
 
-module.exports = mongoose.model('Transaction', transactionSchema);
+// Export the model. If it exists already, reuse it.
+module.exports = mongoose.models.Transaction || mongoose.model("Transaction", transactionSchema);
