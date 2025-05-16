@@ -31,14 +31,17 @@
             <strong><%= loan.name %></strong><br />
             Total: $<%= loan.amount %> |
             Paid: $<%= paid %> |
-            Remaining: $<%= remaining %>
+            Remaining: $<%= remaining %><br/>
+            <% if (loan.user && loan.user.email) { %>
+              <div class="loan-user">By: <%= loan.user.email %></div>
+            <% } %>
 
             <!-- Payment form -->
             <form action="/loans/pay/<%= loan._id %>" method="POST" style="display:inline;">
               <input type="number" name="payment" step="0.01" placeholder="Pay amount" required />
               <button type="submit" class="btn-small">Pay</button>
             </form>
-            
+
             <!-- Delete loan -->
             <form action="/loans/delete/<%= loan._id %>" method="POST" style="display:inline;">
               <button class="delete-btn">x</button>
