@@ -2,7 +2,7 @@ const balance = document.getElementById("balance");
 const money_plus = document.getElementById("moneyplus");
 const money_minus = document.getElementById("moneyminus");
 const list = document.getElementById("list");
-const form = document.getElementById("form");
+const form = document.getElementById("transaction-form");
 const text = form.querySelector('input[name="text"]');
 const amount = form.querySelector('input[name="amount"]'); // changed to lowercase to match your input name
 

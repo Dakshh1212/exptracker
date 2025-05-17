@@ -21,38 +21,64 @@ app.use(session({
   secret: "your-secret-key",
   resave: false,
   saveUninitialized: true,
+  cookie: {
+    secure: false,
+    sameSite: 'lax'
+  }
 }));
+
+app.use((req, res, next) => {
+  console.log("Session user:", req.session.user);
+  next();
+});
 
 app.set("view engine", "ejs");
 
-// MongoDB
+// MongoDB connection
 mongoose.connect("mongodb://127.0.0.1:27017/expenseTrackerDB")
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.log("MongoDB connection error:", err));
 
+// Helper functions
 function requireLogin(req, res, next) {
-  if (!req.session.user) return res.redirect("/login");
+  if (!req.session.user) {
+    console.log("User not logged in, redirecting to login page.");
+    return res.redirect("/login");
+  }
   next();
 }
-
 function getUserId(req) {
   try {
-    return mongoose.Types.ObjectId(req.session.user._id);
-  } catch {
+    const id = new mongoose.Types.ObjectId(req.session.user._id);
+    console.log("Parsed userId:", id);
+    return id;
+  } catch (err) {
+    console.log("Error parsing userId:", err);
     return null;
   }
 }
+// Routes
 
 app.get("/", requireLogin, async (req, res) => {
-  try {
-    const userId = getUserId(req);
-    if (!userId) return res.redirect("/login");
+  console.log("Session user in / route:", req.session.user);
+  const userId = getUserId(req);
+  if (!userId) {
+    console.log("Invalid userId, redirecting to /login");
+    return res.redirect("/login");
+  }
 
+  try {
     const transactions = await Transaction.find({ user: userId });
     const loans = await Loan.find({ user: userId });
 
-    const totalIncome = transactions.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
-    const totalExpenses = transactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0);
+    const totalIncome = transactions
+      .filter(t => t.amount > 0)
+      .reduce((acc, t) => acc + t.amount, 0);
+
+    const totalExpenses = transactions
+      .filter(t => t.amount < 0)
+      .reduce((acc, t) => acc + t.amount, 0);
+
     const totalLoans = loans.reduce((acc, l) => acc + l.amount, 0);
     const totalPaid = loans.reduce((acc, l) => acc + (l.paidAmount || 0), 0);
     const totalRemaining = totalLoans - totalPaid;
@@ -65,7 +91,8 @@ app.get("/", requireLogin, async (req, res) => {
       totalLoans,
       totalPaid,
       totalRemaining,
-      user: req.session.user
+      user: req.session.user,
+      error: null
     });
   } catch (err) {
     console.log(err);
@@ -92,31 +119,52 @@ app.get("/myloans", requireLogin, (req, res) => {
 app.get("/login", (req, res) => {
   res.render("login", { error: null });
 });
-
 app.post("/login", async (req, res) => {
+  console.log("Login POST received:", req.body);
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
-    if (user && await bcrypt.compare(password, user.password)) {
-      req.session.user = { _id: user._id.toString(), username: user.username, email: user.email };
-      return res.redirect("/");
+    if (!user) {
+      console.log("No user found with email:", email);
+      return res.render("login", { error: "Invalid email or password" });
     }
-    res.render("login", { error: "Invalid email or password" });
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      console.log("Password mismatch for user:", email);
+      return res.render("login", { error: "Invalid email or password" });
+    }
+
+    // Set session user data
+    req.session.user = {
+      _id: user._id.toString(),
+      username: user.username,
+      email: user.email,
+    };
+
+    req.session.save((err) => {
+      if (err) {
+        console.log("Session save error:", err);
+        return res.status(500).send("Session error");
+      }
+      console.log("Login successful for user:", email);
+      res.redirect("/");
+    });
   } catch (err) {
-    console.log(err);
+    console.log("Login error:", err);
     res.status(500).send("Login error");
   }
 });
-
 app.get("/signup", (req, res) => {
-  res.render("signup");
+  console.log("GET /signup route hit");
+  res.render("signup", { error: null });
 });
+
 
 app.post("/signup", async (req, res) => {
   const { username, email, password } = req.body;
   try {
     const userExists = await User.findOne({ email });
-    if (userExists) return res.send("User already exists.");
+    if (userExists) return res.render("signup", { error: "User already exists." });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ username, email, password: hashedPassword });
@@ -124,7 +172,7 @@ app.post("/signup", async (req, res) => {
     res.redirect("/login");
   } catch (err) {
     console.log(err);
-    res.status(500).send("Signup error");
+    res.status(500).render("signup", { error: "Signup failed. Try again." });
   }
 });
 
@@ -236,6 +284,11 @@ app.post("/contact", requireLogin, async (req, res) => {
       success: null,
     });
   }
+});
+// Debug route
+app.post('/test-login', (req, res) => {
+  console.log('Test login route hit:', req.body);
+  res.send('Test login route is working!');
 });
 
 app.listen(PORT, () => {
